@@ -1,0 +1,24 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:grocery_app/core/theming/app_font_weight_helper.dart';
+import 'package:grocery_app/core/theming/colors.dart';
+
+class AppTextStyles {
+  static TextStyle font24BlackBold = TextStyle(
+    color: Colors.black,
+    fontSize: 24.sp,
+    fontWeight: FontWeightHelper.bold,
+  );
+
+  static TextStyle font16GraySemiBold = TextStyle(
+    color: ColorsManager.gray,
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.semiBold,
+  );
+
+  static TextStyle font16BlackSemiBold = TextStyle(
+    color: Colors.white,
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.semiBold,
+  );
+}
