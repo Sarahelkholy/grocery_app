@@ -23,7 +23,7 @@ class GroceryApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.white,
           ),
           onGenerateRoute: appRouter.generateRoute,
-          initialRoute: Routes.signUpScreen,
+          initialRoute: Routes.onBoardingScreen,
         );
       },
     );
