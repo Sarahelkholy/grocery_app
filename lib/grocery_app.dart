@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:grocery_app/core/helpers/constants.dart';
 import 'package:grocery_app/core/routing/app_router.dart';
 import 'package:grocery_app/core/routing/routes.dart';
 import 'package:grocery_app/core/theming/colors.dart';
@@ -23,7 +24,7 @@ class GroceryApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.white,
           ),
           onGenerateRoute: appRouter.generateRoute,
-          initialRoute: Routes.onBoardingScreen,
+          initialRoute: isLoggedInUser ? Routes.homeScreen : Routes.loginScreen,
         );
       },
     );
