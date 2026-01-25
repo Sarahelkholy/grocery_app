@@ -5,6 +5,7 @@ import 'package:grocery_app/features/auth/data/repo/auth_repository_impl.dart';
 import 'package:grocery_app/features/auth/domain/usecases/auth_use_cases.dart';
 import 'package:grocery_app/features/auth/presentation/provider/auth_provider.dart'
     as my_auth;
+import 'package:grocery_app/features/location/presentation/provider/location_provider.dart';
 
 final getIt = GetIt.instance;
 
@@ -27,4 +28,6 @@ Future<void> setupDependencies() async {
   getIt.registerFactory<my_auth.AuthProvider>(
     () => my_auth.AuthProvider(getIt<AuthUseCases>()),
   );
+
+  getIt.registerFactory<LocationProvider>(() => LocationProvider());
 }

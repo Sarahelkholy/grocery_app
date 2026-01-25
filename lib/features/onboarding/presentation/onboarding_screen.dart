@@ -1,11 +1,19 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:developer';
+
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:grocery_app/core/helpers/extentions.dart';
 import 'package:grocery_app/core/helpers/spacing.dart';
+import 'package:grocery_app/core/routing/routes.dart';
 import 'package:grocery_app/core/theming/app_text_styles.dart';
 import 'package:grocery_app/core/theming/colors.dart';
+import 'package:grocery_app/features/location/presentation/provider/location_provider.dart';
 import 'package:grocery_app/features/onboarding/presentation/onboarding_data.dart';
 import 'package:grocery_app/features/onboarding/widgets/already_have_an_account_text.dart';
+import 'package:provider/provider.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -45,6 +53,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locationData = Provider.of<LocationProvider>(context, listen: false);
+
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -91,7 +101,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 bottom: 50.h,
                 left: 20.w,
                 right: 20.w,
-                child: _buildMainButton(),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    setState(() {
+                      locationData.isLoading = true;
+                    });
+                    await locationData.fetchCurrentLocation();
+
+                    if (locationData.permissionAllowed == true) {
+                      context.pushReplacementNamed(Routes.mapScreen);
+                      setState(() {
+                        locationData.isLoading = false;
+                      });
+                    } else {
+                      log('Location permission not granted');
+                    }
+                  },
+
+                  child: locationData.isLoading
+                      ? SizedBox(
+                          height: 22.h,
+                          width: 22.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Set Delivery Location',
+                          style: AppTextStyles.font16WhiteSemiBold,
+                        ),
+                ),
               ),
 
             // Already have account
@@ -140,23 +180,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMainButton() {
-    return ElevatedButton(
-      onPressed: () {
-        // Navigate to next screen
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: ColorsManager.green,
-        padding: EdgeInsets.symmetric(vertical: 15.h),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      child: Text(
-        'Set Delivery Location',
-        style: AppTextStyles.font16BlackSemiBold,
-      ),
     );
   }
 }

@@ -34,8 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<my_auth.AuthProvider>(context, listen: false);
-
     return Scaffold(
       body: Padding(
         padding: EdgeInsets.symmetric(vertical: 60.h, horizontal: 20.w),
@@ -101,24 +99,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
             verticalSpace(50),
 
-            ElevatedButton(
-              onPressed: _isPhoneValid
-                  ? () async {
-                      if (_formKey.currentState!.validate()) {
-                        String phoneNumber = '+20${_phoneController.text}';
-                        await auth.sendOtp(context, phoneNumber);
-                      }
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 48.h),
-                backgroundColor: ColorsManager.lightYellow,
-                disabledBackgroundColor: ColorsManager.lightgray,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text('Continue', style: AppTextStyles.font16BlackSemiBold),
+            Consumer<my_auth.AuthProvider>(
+              builder: (context, auth, _) {
+                return ElevatedButton(
+                  onPressed: _isPhoneValid && !auth.isLoading
+                      ? () async {
+                          if (_formKey.currentState!.validate()) {
+                            String phoneNumber = '+20${_phoneController.text}';
+                            await auth.sendOtp(context, phoneNumber);
+                          }
+                        }
+                      : null,
+
+                  child: auth.isLoading
+                      ? SizedBox(
+                          height: 22.h,
+                          width: 22.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Continue',
+                          style: AppTextStyles.font16WhiteSemiBold,
+                        ),
+                );
+              },
             ),
           ],
         ),

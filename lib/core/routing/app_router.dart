@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:grocery_app/core/routing/routes.dart';
 import 'package:grocery_app/features/home/presentation/home_screen.dart';
+import 'package:grocery_app/features/location/presentation/screens/map_screen.dart';
 import 'package:grocery_app/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:grocery_app/features/auth/presentation/login_screen.dart';
 
@@ -17,6 +18,8 @@ class AppRouter {
 
       case Routes.homeScreen:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case Routes.mapScreen:
+        return MaterialPageRoute(builder: (_) => const MapScreen());
 
       default:
         return null;
