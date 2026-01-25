@@ -10,8 +10,9 @@ plugins {
 
 android {
     namespace = "com.example.grocery_app"
-    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

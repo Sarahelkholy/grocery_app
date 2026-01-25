@@ -9,6 +9,8 @@ import 'package:grocery_app/core/routing/routes.dart';
 import 'package:grocery_app/core/theming/colors.dart';
 import 'package:grocery_app/features/auth/domain/entity/user_entity.dart';
 import 'package:grocery_app/features/auth/domain/usecases/auth_use_cases.dart';
+import 'package:grocery_app/features/location/presentation/provider/location_provider.dart';
+import 'package:provider/provider.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthUseCases authUseCases;
@@ -17,14 +19,18 @@ class AuthProvider with ChangeNotifier {
 
   String smsOtp = '';
   String? verificationId;
+
   String error = '';
   bool isLoading = false;
+
+  double? _pendingLat;
+  double? _pendingLng;
+  String? _pendingAddress;
 
   // Step 1: Send OTP
   Future<void> sendOtp(BuildContext context, String phoneNumber) async {
     try {
       isLoading = true;
-
       notifyListeners();
 
       log("Sending OTP to: $phoneNumber");
@@ -53,14 +59,14 @@ class AuthProvider with ChangeNotifier {
   // Step 2: Show OTP Dialog
   Future<void> _showOtpDialog(BuildContext context, String phoneNumber) async {
     TextEditingController otpController = TextEditingController();
-
     String localError = '';
+    bool isSubmitting = false;
 
     await showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text(
+          title: const Text(
             'Enter OTP',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -94,17 +100,22 @@ class AuthProvider with ChangeNotifier {
               if (localError.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(localError, style: TextStyle(color: Colors.red)),
+                  child: Text(
+                    localError,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                setState(() => localError = '');
-                context.pop();
-              },
-              child: Text(
+              onPressed: isSubmitting
+                  ? null
+                  : () {
+                      setState(() => localError = '');
+                      context.pop();
+                    },
+              child: const Text(
                 'Cancel',
                 style: TextStyle(color: ColorsManager.gray),
               ),
@@ -114,51 +125,163 @@ class AuthProvider with ChangeNotifier {
                 backgroundColor: ColorsManager.lightYellow,
                 foregroundColor: Colors.white,
               ),
-              onPressed: () async {
-                final code = otpController.text.trim();
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final code = otpController.text.trim();
 
-                if (code.length != 6) {
-                  setState(
-                    () => localError = 'Please enter a valid 6-digit OTP',
-                  );
-                  return;
-                }
+                      if (code.length != 6) {
+                        setState(() {
+                          localError = 'Please enter a valid 6-digit OTP';
+                        });
+                        return;
+                      }
 
-                if (verificationId == null) {
-                  setState(() => localError = 'Verification ID not found');
-                  return;
-                }
+                      if (verificationId == null) {
+                        setState(() {
+                          localError = 'Verification ID not found';
+                        });
+                        return;
+                      }
 
-                try {
-                  UserCredential credential = await authUseCases.verifyOtp(
-                    code,
-                    verificationId!,
-                  );
+                      setState(() {
+                        isSubmitting = true;
+                        localError = '';
+                      });
 
-                  User? user = credential.user;
-                  if (user != null) {
-                    final newUser = UserEntity(phoneNumber: user.phoneNumber!);
-                    await authUseCases.createUser(newUser);
+                      try {
+                        UserCredential credential = await authUseCases
+                            .verifyOtp(code, verificationId!);
 
-                    context.pop();
-                    context.pushReplacementNamed(Routes.homeScreen);
-                  } else {
-                    setState(() => localError = 'Failed to sign in');
-                    otpController.clear();
-                  }
-                } catch (e) {
-                  log("OTP Verification Error: $e");
-                  setState(() {
-                    localError = 'Invalid OTP. Please try again.';
-                    otpController.clear();
-                  });
-                }
-              },
-              child: const Text('Submit'),
+                        User? user = credential.user;
+                        if (user != null) {
+                          final newUser = UserEntity(
+                            id: user.uid,
+
+                            phoneNumber: user.phoneNumber!,
+                          );
+                          final userId = user.uid;
+                          final existingUser = await authUseCases.getUserById(
+                            userId,
+                          );
+
+                          if (existingUser == null) {
+                            await authUseCases.createUser(newUser);
+                          }
+
+                          await savePendingLocationIfExists();
+                          await loadUserLocationToProvider(context);
+
+                          context.pop();
+                          context.pushReplacementNamed(Routes.homeScreen);
+                        } else {
+                          setState(() {
+                            localError = 'Failed to sign in';
+                          });
+                          otpController.clear();
+                        }
+                      } catch (e) {
+                        log("OTP Verification Error: $e");
+                        setState(() {
+                          localError = 'Invalid OTP. Please try again.';
+                          otpController.clear();
+                        });
+                      } finally {
+                        setState(() {
+                          isSubmitting = false;
+                        });
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Submit'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> updateUserLocation({
+    required double latitude,
+    required double longitude,
+    required String address,
+  }) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      final firebaseUser = authUseCases.getCurrentUser();
+      if (firebaseUser == null) throw Exception("User not logged in");
+
+      final updatedUser = UserEntity(
+        id: firebaseUser.uid,
+        phoneNumber: firebaseUser.phoneNumber!,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+      );
+
+      await authUseCases.updateUser(updatedUser);
+
+      isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      isLoading = false;
+      error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void setPendingLocation({
+    required double lat,
+    required double lng,
+    required String address,
+  }) {
+    _pendingLat = lat;
+    _pendingLng = lng;
+    _pendingAddress = address;
+  }
+
+  Future<void> savePendingLocationIfExists() async {
+    if (_pendingLat != null && _pendingLng != null && _pendingAddress != null) {
+      await updateUserLocation(
+        latitude: _pendingLat!,
+        longitude: _pendingLng!,
+        address: _pendingAddress!,
+      );
+
+      _pendingLat = null;
+      _pendingLng = null;
+      _pendingAddress = null;
+    }
+  }
+
+  Future<void> loadUserLocationToProvider(BuildContext context) async {
+    final firebaseUser = authUseCases.getCurrentUser();
+    if (firebaseUser == null) return;
+
+    final user = await authUseCases.getUserById(firebaseUser.uid);
+    if (user == null) return;
+
+    if (user.latitude != null && user.longitude != null) {
+      final locationProvider = Provider.of<LocationProvider>(
+        context,
+        listen: false,
+      );
+
+      locationProvider.setLocationFromFirestore(
+        lat: user.latitude!,
+        lng: user.longitude!,
+        address: user.address,
+      );
+    }
   }
 }

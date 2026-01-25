@@ -5,11 +5,19 @@ part 'user_model.g.dart';
 
 @JsonSerializable()
 class UserModel {
-  final String? id;
+  final String id;
   final String number;
+  final double? latitude;
+  final double? longitude;
+  final String? address;
 
-  UserModel({this.id, required this.number});
-
+  UserModel({
+    required this.id,
+    required this.number,
+    this.latitude,
+    this.longitude,
+    this.address,
+  });
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);
 
@@ -20,10 +28,22 @@ class UserModel {
   }
 
   factory UserModel.fromEntity(UserEntity entity) {
-    return UserModel(number: entity.phoneNumber);
+    return UserModel(
+      number: entity.phoneNumber,
+      id: entity.id,
+      latitude: entity.latitude,
+      longitude: entity.longitude,
+      address: entity.address,
+    );
   }
 
   UserEntity toEntity() {
-    return UserEntity(phoneNumber: number);
+    return UserEntity(
+      id: id,
+      phoneNumber: number,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
+    );
   }
 }
