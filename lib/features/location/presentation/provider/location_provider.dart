@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:grocery_app/core/helpers/constants.dart';
+import 'package:grocery_app/core/helpers/shared_pref_helper.dart';
 
 class LocationProvider with ChangeNotifier {
   double? latitude;
@@ -104,5 +106,9 @@ class LocationProvider with ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<void> saveUserLocation(String location) async {
+    await SharedPrefHelper.setData(SharedPrefKeys.userlocation, location);
   }
 }

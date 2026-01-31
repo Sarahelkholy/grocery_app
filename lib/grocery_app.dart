@@ -21,6 +21,8 @@ class GroceryApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Grocery app',
           theme: ThemeData(
+            fontFamily: 'Poppins',
+
             primaryColor: ColorsManager.mainYellow,
             scaffoldBackgroundColor: Colors.white,
             elevatedButtonTheme: ElevatedButtonThemeData(

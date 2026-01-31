@@ -91,6 +91,8 @@ class _LocationContainerState extends State<LocationContainer> {
                       "${widget.locationData.selectedAddress?.locality ?? ''}, "
                       "${widget.locationData.selectedAddress?.country ?? ''}";
 
+                  await widget.locationData.saveUserLocation(address);
+
                   if (!isLoggedInUser) {
                     authProvider.setPendingLocation(
                       lat: lat,
